@@ -364,7 +364,33 @@ which may require your confirmation depending on the security mode.
                         r for r in executed_results 
                         if r['action'].get('type') == 'read_file' and r.get('content')
                     ]
+                    list_results = [
+                        r for r in executed_results
+                        if r['action'].get('type') == 'list_dir' and r.get('result_data')
+                    ]
                     
+                    # Handle LIST_DIR results immediately
+                    if list_results:
+                        file_list = []
+                        for res in list_results:
+                            entries = res.get('result_data', {}).get('entries', [])
+                            path = res['action'].get('path', '.') or '.'
+                            file_list.extend([f"{path}/{e}" if path != '.' else e for e in entries])
+                        
+                        if file_list:
+                            files_str = ", ".join(file_list)
+                            self.print_output(f"\n📂 **Arquivos encontrados:** {files_str}", style="bold blue")
+                            
+                            # Prompt AI to respond conversationally about the listing
+                            followup_prompt = f"O usuário perguntou sobre arquivos disponíveis. Aqui está a lista: {files_str}. Responda de forma natural indicando quais arquivos estão disponíveis."
+                            with self.console.status("[bold green]Generating response...", spinner="dots"):
+                                followup_result = await self.router.process_prompt(followup_prompt)
+                            if followup_result.get('success') and followup_result.get('thought'):
+                                self.print_thought(followup_result['thought'])
+                                if followup_result.get('response'):
+                                    self.console.print(f"\n{followup_result['response']}", style="bold blue")
+
+                    # Handle READ_FILE results
                     if read_contents:
                         # Build summary of what was read
                         summary_parts = []
