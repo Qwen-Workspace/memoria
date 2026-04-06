@@ -1,0 +1,31 @@
+# AI Terminal Assistant Configuration
+
+model:
+  provider: ollama
+  name: llama3.1
+  api_base: http://localhost:11434
+  # api_key_env: OPENAI_API_KEY  # Uncomment for OpenAI
+  temperature: 0.7
+  max_tokens: 2048
+
+security:
+  mode: interactive  # dry_run, interactive, scoped_auto
+  allowed_root: ./workspace
+  max_file_size_mb: 50
+  require_git_backup: true
+  blocked_paths:
+    - .git
+    - .venv
+    - __pycache__
+    - node_modules
+
+ui:
+  theme: dark
+  show_diffs: true
+  history_path: ~/.config/ai-cli/history
+  syntax_highlighting: true
+
+logging:
+  level: INFO
+  audit_path: ./logs/audit.jsonl
+  structured: true
