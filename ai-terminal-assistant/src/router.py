@@ -38,6 +38,7 @@ IMPORTANT RULES:
 3. Explain your reasoning in the "thought" field
 4. Propose actions as a list with type, path, and content (for write operations)
 5. Be concise but clear in your explanations
+6. If unsure about file names, use list_dir action first to discover available files
 
 Available action types (only use when needed):
 - read_file: Read content of a file

@@ -294,6 +294,26 @@ which may require your confirmation depending on the security mode.
             if not self.handle_command(user_input):
                 return
         else:
+            # First, check if user is asking about files without specifying names
+            # If so, automatically list directory to help AI find the right file
+            file_keywords = ['arquivo', 'file', 'ler', 'read', 'abrir', 'open', 'ver', 'see', 'listar', 'list']
+            has_file_request = any(keyword in user_input.lower() for keyword in file_keywords)
+            mentions_specific_file = any(ext in user_input for ext in ['.txt', '.py', '.md', '.yaml', '.json'])
+            
+            # If user asks about files but doesn't specify which one, list directory first
+            if has_file_request and not mentions_specific_file:
+                with self.console.status("[bold green]Checking available files...", spinner="dots"):
+                    list_result = await self.router.process_prompt("Liste os arquivos disponíveis no diretório atual usando list_dir")
+                
+                if list_result.get('success'):
+                    # Collect the listing result
+                    for action_result in list_result.get('actions', []):
+                        if action_result.get('status') == 'executed' and action_result['action'].get('type') == 'list_dir':
+                            content = action_result.get('content', '')
+                            if content:
+                                # Add context to user input
+                                user_input = f"Contexto: Arquivos disponíveis:\n{content}\n\nPergunta do usuário: {user_input}"
+            
             # Process as normal prompt
             with self.console.status("[bold green]Thinking...", spinner="dots"):
                 result = await self.router.process_prompt(user_input)
