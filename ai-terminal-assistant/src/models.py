@@ -54,6 +54,7 @@ class AIResponse(BaseModel):
     """Structured response from the AI model"""
     thought: str = Field(..., description="Brief explanation of the AI's reasoning and intentions")
     actions: List[Action] = Field(default_factory=list, description="List of proposed actions")
+    response: Optional[str] = Field(None, description="Direct conversational response to the user (when no actions are needed or in addition to actions)")
     
     class Config:
         json_schema_extra = {

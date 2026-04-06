@@ -49,6 +49,14 @@ class SecurityEngine:
             # Check for path traversal in base path
             resolved_path = self.resolve_path(action.path)
             
+            # STRICT WORKSPACE CHECK: Ensure path is within workspace
+            if self.config.restrict_to_workspace:
+                try:
+                    # Must be strictly within allowed_root (workspace)
+                    resolved_path.relative_to(self.allowed_root)
+                except ValueError:
+                    return False, f"Operation denied: Access restricted to workspace directory only ({self.allowed_root})"
+            
             # Check if path is blocked
             path_parts = resolved_path.relative_to(self.allowed_root).parts
             for part in path_parts:
@@ -64,6 +72,14 @@ class SecurityEngine:
             # Validate new_path for rename operations
             if action.new_path:
                 resolved_new_path = self.resolve_path(action.new_path)
+                
+                # Also check new_path for workspace restriction
+                if self.config.restrict_to_workspace:
+                    try:
+                        resolved_new_path.relative_to(self.allowed_root)
+                    except ValueError:
+                        return False, f"Destination denied: Must be within workspace directory"
+                
                 try:
                     resolved_new_path.relative_to(self.allowed_root)
                 except ValueError:

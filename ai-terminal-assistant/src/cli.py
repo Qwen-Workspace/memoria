@@ -387,6 +387,23 @@ which may require your confirmation depending on the security mode.
                             # Execute any follow-up actions if needed
                             for action_result in followup_result.get('actions', []):
                                 self.print_action_result(action_result)
+                
+                # Always show the final response from AI if no actions were taken or after actions complete
+                # This ensures conversational responses are shown even without file reads
+                if result.get('success') and result.get('response'):
+                    self.console.print(
+                        f"\n{result['response']}",
+                        style="bold blue"
+                    )
+                elif result.get('success') and not result.get('actions') and not result.get('thought'):
+                    # If AI returned nothing visible, prompt it to respond
+                    with self.console.status("[bold green]Getting response...", spinner="dots"):
+                        followup_result = await self.router.process_prompt("Responda diretamente à pergunta do usuário de forma natural e útil.")
+                    if followup_result.get('success') and followup_result.get('response'):
+                        self.console.print(
+                            f"\n{followup_result['response']}",
+                            style="bold blue"
+                        )
             else:
                 self.print_error(result.get('error', 'Unknown error'))
     
