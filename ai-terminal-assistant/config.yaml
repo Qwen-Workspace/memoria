@@ -2,7 +2,7 @@
 
 model:
   provider: ollama
-  name: llama3.1
+  name: qwen2.5:1.5b  # Modelo leve e eficiente
   api_base: http://localhost:11434
   # api_key_env: OPENAI_API_KEY  # Uncomment for OpenAI
   temperature: 0.7

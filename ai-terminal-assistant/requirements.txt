@@ -1,0 +1,20 @@
+# AI Terminal Assistant - Dependencies
+
+# Core
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+pyyaml>=6.0
+
+# HTTP Client for AI APIs
+httpx>=0.25.0
+
+# CLI/TUI
+rich>=13.0.0
+prompt_toolkit>=3.0.0
+
+# Optional: Git integration for backups
+# gitpython>=3.1.0
+
+# Optional: Advanced logging
+# structlog>=23.0.0
+# loguru>=0.7.0
