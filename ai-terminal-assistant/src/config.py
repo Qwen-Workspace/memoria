@@ -28,6 +28,7 @@ class SecurityConfig(BaseModel):
     require_git_backup: bool = Field(default=True, description="Require git backup before modifications")
     allowed_extensions: Optional[List[str]] = Field(None, description="Allowed file extensions")
     blocked_paths: List[str] = Field(default_factory=lambda: [".git", ".venv", "__pycache__", "node_modules"])
+    restrict_to_workspace: bool = Field(default=True, description="Restrict all operations to workspace directory only")
 
 
 class UIConfig(BaseModel):

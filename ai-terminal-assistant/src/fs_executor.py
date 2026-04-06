@@ -190,21 +190,16 @@ class FileSystemExecutor:
             )
     
     def _delete_file(self, path: Path, relative_path: str) -> OperationResult:
-        """Delete file (moves to backup instead of permanent deletion)"""
+        """Delete file (permanent deletion, no backup)"""
         try:
-            # Create backup before deletion
-            backup_path = self.security.generate_backup_path(path)
-            shutil.copy2(path, backup_path)
-            
-            # Delete file
+            # Delete file permanently
             path.unlink()
             
             return OperationResult(
                 success=True,
                 action_type=ActionType.DELETE_FILE,
                 path=relative_path,
-                message="Successfully deleted file (backup created)",
-                backup_path=str(backup_path)
+                message="Successfully deleted file"
             )
         except Exception as e:
             return OperationResult(
