@@ -1,15 +1,21 @@
 ```
-# Python
-__pycache__/
+# Compiled Python files
 *.pyc
-*.pyo
-*.pyd
+__pycache__/
 
-# Logs and temp files
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Logs
 *.log
-*.tmp
 
-# Environment
+# Temporary files
+*.tmp
+*.swp
+
+# Environment files
 .env
 .env.local
 *.env.*
@@ -17,5 +23,8 @@ __pycache__/
 # Editors
 .vscode/
 .idea/
-*.swp
+
+# Dependencies cache
+.mypy_cache/
+.pytest_cache/
 ```
