@@ -114,7 +114,9 @@ class SecurityEngine:
             return False
         
         if mode == SecurityMode.INTERACTIVE:
-            return True
+            # Only require confirmation for write/delete/rename operations
+            # Read operations are auto-approved in interactive mode too
+            return action.type not in [ActionType.READ_FILE, ActionType.LIST_DIR]
         
         if mode == SecurityMode.SCOPED_AUTO:
             # Non-read operations require confirmation

@@ -305,12 +305,15 @@ which may require your confirmation depending on the security mode.
                 
                 # Process each action
                 pending_actions = []
+                executed_results = []
                 for action_result in result.get('actions', []):
                     self.print_action_result(action_result)
                     
                     # Collect pending confirmations
                     if action_result.get('status') == 'pending_confirmation':
                         pending_actions.append(action_result)
+                    elif action_result.get('status') == 'executed':
+                        executed_results.append(action_result)
                 
                 # Handle confirmations
                 for pending in pending_actions:
@@ -326,6 +329,44 @@ which may require your confirmation depending on the security mode.
                         f"   {status_icon} Confirmation: {confirm_result['message']}",
                         style=status_color
                     )
+                    
+                    if confirmed and confirm_result.get('status') == 'executed':
+                        executed_results.append({
+                            'action': pending['action'],
+                            'status': 'executed',
+                            'content': confirm_result.get('content'),
+                            'message': confirm_result.get('message')
+                        })
+                
+                # If there were executed read operations, send results back to AI for response
+                if executed_results:
+                    read_contents = [
+                        r for r in executed_results 
+                        if r['action'].get('type') == 'read_file' and r.get('content')
+                    ]
+                    
+                    if read_contents:
+                        # Build summary of what was read
+                        summary_parts = []
+                        for read_result in read_contents:
+                            path = read_result['action'].get('path', 'unknown')
+                            content = read_result.get('content', '')
+                            summary_parts.append(f"Arquivo {path}:\n{content}")
+                        
+                        summary = "\n\n".join(summary_parts)
+                        
+                        # Send back to AI to generate response
+                        followup_prompt = f"Com base no conteúdo lido dos arquivos, responda à pergunta do usuário.\n\n{summary}"
+                        
+                        with self.console.status("[bold green]Generating response...", spinner="dots"):
+                            followup_result = await self.router.process_prompt(followup_prompt)
+                        
+                        if followup_result.get('success') and followup_result.get('thought'):
+                            self.print_thought(followup_result['thought'])
+                            
+                            # Execute any follow-up actions if needed
+                            for action_result in followup_result.get('actions', []):
+                                self.print_action_result(action_result)
             else:
                 self.print_error(result.get('error', 'Unknown error'))
     
