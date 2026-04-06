@@ -29,24 +29,56 @@ class BaseAIAdapter(ABC):
     def parse_response(self, response_text: str) -> AIResponse:
         """Parse AI response into structured format"""
         try:
+            # Tenta limpar o conteúdo caso venha envolto em markdown ```json ... ```
+            cleaned_content = response_text.strip()
+            
+            # Remove blocos de código markdown se presentes
+            if cleaned_content.startswith("```"):
+                lines = cleaned_content.split('\n')
+                # Encontra a primeira linha que não é ```
+                start_idx = 0
+                for i, line in enumerate(lines):
+                    if not line.strip().startswith("```"):
+                        start_idx = i
+                        break
+                # Encontra a última linha válida
+                end_idx = len(lines)
+                for i in range(len(lines) - 1, -1, -1):
+                    if not lines[i].strip().startswith("```"):
+                        end_idx = i + 1
+                        break
+                
+                cleaned_content = '\n'.join(lines[start_idx:end_idx]).strip()
+            
             # Try to extract JSON from response
-            json_start = response_text.find('{')
-            json_end = response_text.rfind('}') + 1
+            json_start = cleaned_content.find('{')
+            json_end = cleaned_content.rfind('}') + 1
             
             if json_start >= 0 and json_end > json_start:
-                json_str = response_text[json_start:json_end]
+                json_str = cleaned_content[json_start:json_end]
                 data = json.loads(json_str)
                 return AIResponse(**data)
             else:
-                # Fallback: create a simple response
+                # Fallback: create a simple response with the raw text
                 return AIResponse(
-                    thought="Could not parse structured response",
-                    actions=[]
+                    thought="Resposta recebida em formato não estruturado",
+                    actions=[],
+                    response=cleaned_content[:500]  # Limita tamanho da resposta
                 )
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse AI response as JSON: {e}")
+            # Em caso de erro de JSON, retorna uma resposta amigável
+            return AIResponse(
+                thought=f"Erro ao processar resposta: {str(e)}",
+                actions=[],
+                response="Desculpe, ocorreu um erro interno ao processar sua solicitação. Por favor, tente novamente."
+            )
         except Exception as e:
-            raise ValueError(f"Failed to parse AI response: {e}")
+            # Em caso de erro geral, retorna uma resposta amigável
+            return AIResponse(
+                thought=f"Erro inesperado: {str(e)}",
+                actions=[],
+                response="Desculpe, ocorreu um erro inesperado. Por favor, tente novamente."
+            )
 
 
 class OllamaAdapter(BaseAIAdapter):
