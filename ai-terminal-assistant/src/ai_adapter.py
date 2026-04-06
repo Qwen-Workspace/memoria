@@ -54,10 +54,13 @@ class OllamaAdapter(BaseAIAdapter):
     
     async def chat(self, messages: list[Dict[str, str]], system_prompt: str) -> AIResponse:
         """Send chat request to Ollama"""
-        url = f"{self.api_base or 'http://localhost:11434'}/api/chat"
+        base_url = self.api_base or "http://localhost:11434"
+        
+        # Try the /api/chat endpoint first (newer Ollama versions)
+        url = f"{base_url}/api/chat"
         
         payload = {
-            "model": self.kwargs.get("model_name", "llama3.1"),
+            "model": self.kwargs.get("model_name", "qwen2.5:1.5b"),
             "messages": [
                 {"role": "system", "content": system_prompt},
                 *messages
@@ -72,12 +75,50 @@ class OllamaAdapter(BaseAIAdapter):
             payload["options"]["num_predict"] = self.kwargs["max_tokens"]
         
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            
-            assistant_message = data.get("message", {}).get("content", "")
-            return self.parse_response(assistant_message)
+            try:
+                response = await client.post(url, json=payload)
+                
+                # If /api/chat returns 404, try /api/generate (older format)
+                if response.status_code == 404:
+                    url = f"{base_url}/api/generate"
+                    # Convert to generate format (single prompt string)
+                    prompt_text = f"{system_prompt}\n\n"
+                    for msg in messages:
+                        role = msg["role"].upper()
+                        content = msg["content"]
+                        prompt_text += f"{role}: {content}\n"
+                    prompt_text += "ASSISTANT:"
+                    
+                    payload = {
+                        "model": self.kwargs.get("model_name", "qwen2.5:1.5b"),
+                        "prompt": prompt_text,
+                        "stream": False,
+                        "options": {
+                            "temperature": self.kwargs.get("temperature", 0.7),
+                        }
+                    }
+                    if self.kwargs.get("max_tokens"):
+                        payload["options"]["num_predict"] = self.kwargs["max_tokens"]
+                    
+                    response = await client.post(url, json=payload)
+                
+                response.raise_for_status()
+                data = response.json()
+                
+                # Handle both response formats
+                if "message" in data:
+                    assistant_message = data.get("message", {}).get("content", "")
+                elif "response" in data:
+                    assistant_message = data.get("response", "")
+                else:
+                    assistant_message = ""
+                
+                return self.parse_response(assistant_message)
+                
+            except httpx.HTTPStatusError as e:
+                raise RuntimeError(f"Ollama API error ({e.response.status_code}): {e.response.text}")
+            except httpx.ConnectError as e:
+                raise RuntimeError(f"Cannot connect to Ollama at {base_url}. Is Ollama running? (Try: ollama serve)")
 
 
 class OpenAIAdapter(BaseAIAdapter):
