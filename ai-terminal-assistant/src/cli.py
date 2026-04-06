@@ -167,7 +167,7 @@ class CLIInterface:
         
         self.console.print()
     
-    def print_confirmation_prompt(self, result: Dict) -> bool:
+    async def print_confirmation_prompt(self, result: Dict) -> bool:
         """Prompt user for confirmation"""
         action = result.get('action', {})
         action_type = action.get('type', 'unknown')
@@ -190,13 +190,13 @@ class CLIInterface:
         
         self.console.print()
         
-        # Get user input
+        # Get user input asynchronously
         try:
-            response = self.session.prompt(
+            response = await self.session.prompt_async(
                 [('class:warning', 'Confirm? [y/n/dry-run]: ')],
                 style=self.style
-            ).strip().lower()
-            
+            )
+            response = response.strip().lower()
             return response in ['y', 'yes']
         except EOFError:
             return False
@@ -314,7 +314,7 @@ which may require your confirmation depending on the security mode.
                 
                 # Handle confirmations
                 for pending in pending_actions:
-                    confirmed = self.print_confirmation_prompt(pending)
+                    confirmed = await self.print_confirmation_prompt(pending)
                     confirm_result = self.router.confirm_action(
                         pending['action'],
                         confirmed
